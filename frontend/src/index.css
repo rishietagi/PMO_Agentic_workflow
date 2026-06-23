@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* shadcn/ui design tokens — slate-based dark theme with an indigo→violet brand */
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 213 31% 95%;
+    --card: 222 44% 9%;
+    --card-foreground: 213 31% 95%;
+    --primary: 245 82% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 30% 16%;
+    --secondary-foreground: 213 31% 92%;
+    --muted: 222 30% 14%;
+    --muted-foreground: 215 18% 60%;
+    --accent: 222 33% 18%;
+    --accent-foreground: 213 31% 95%;
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 48%;
+    --warning: 38 92% 60%;
+    --border: 222 30% 18%;
+    --input: 222 30% 18%;
+    --ring: 245 82% 67%;
+    --radius: 0.85rem;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-image:
+      radial-gradient(1100px 600px at 85% -8%, hsl(245 82% 67% / 0.10), transparent 55%),
+      radial-gradient(900px 600px at -8% 5%, hsl(270 70% 60% / 0.10), transparent 50%);
+    background-attachment: fixed;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: hsl(222 30% 22%); border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+}
+
+/* subtle glass effect for cards */
+.glass { backdrop-filter: blur(6px); }

@@ -1,0 +1,37 @@
+Statement of Work — CRM Cloud Migration Program
+
+Background:
+Acme Industrial currently runs a heavily customized on-premise CRM that is
+end-of-life. Leadership has approved migrating to a cloud SaaS CRM to reduce
+maintenance cost, improve uptime, and enable a mobile field-sales workforce.
+
+Objectives:
+- Migrate all customer, contact, and opportunity data to the new SaaS CRM.
+- Cut over 400 users across sales, service, and marketing in 3 regions.
+- Integrate the CRM with the existing ERP and marketing automation tools.
+- Decommission the legacy CRM and its supporting infrastructure.
+
+Scope:
+In scope: data migration, integration build, user provisioning, training,
+and hypercare. Out of scope: replacing the ERP, net-new analytics warehouse.
+
+Key deliverables:
+- Migrated and validated production CRM tenant.
+- Two bidirectional integrations (ERP, marketing automation).
+- Role-based training materials and 4 weeks of post-go-live hypercare.
+
+Constraints:
+- Fixed budget of $1.2M and a 9-month timeline (must finish before fiscal
+  year end).
+- No data loss; regulated customer data must remain in-region.
+- Field sales cannot be offline for more than one business day at cutover.
+
+Assumptions:
+- SaaS vendor and licenses are already selected and procured.
+- Business SMEs are available 20% of their time for the project duration.
+
+Stakeholders:
+VP Sales (sponsor), CRM Product Owner, IT Security, Regional Sales Directors,
+Customer Service Lead, Data Privacy Officer.
+
+Timeline: 9 months. Budget: $1.2M.

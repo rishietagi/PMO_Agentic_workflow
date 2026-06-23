@@ -1,0 +1,33 @@
+# Secrets
+.env
+
+# Licensed/owned source content — never commit the book or derived text
+data/raw/*.pdf
+data/processed/
+data/chroma_db/
+data/parent_store.json
+data/feedback.db
+outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Models cache (sentence-transformers / HF)
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# build logs
+*.log
+conda_create.log
+
+# frontend build artifacts
+frontend/node_modules/
+frontend/npm_install.log
+app/spa/

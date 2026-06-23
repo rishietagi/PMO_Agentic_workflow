@@ -1,0 +1,32 @@
+name: pmo-intel-engine
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - nodejs>=20        # builds the React/Tailwind/shadcn frontend (Vite)
+  - pip:
+      # --- PDF OCR / structure extraction ---
+      - marker-pdf            # primary layout-aware OCR -> structured Markdown
+      - pymupdf               # PyMuPDF: page rendering + fallback text/raster ops
+      - pytesseract           # OCR fallback (requires system Tesseract binary)
+      - pillow                # image handling for the OCR fallback
+      # --- RAG: embeddings, vector store, sparse retrieval, reranking ---
+      - sentence-transformers # BAAI/bge-base-en-v1.5 embeddings + cross-encoder reranker
+      - chromadb              # persisted vector store
+      - rank_bm25             # sparse BM25 retrieval
+      - tiktoken              # cl100k_base token length heuristic for chunk sizing
+      # --- Agent orchestration ---
+      - langgraph             # closed-loop state graph
+      # --- LLM providers ---
+      - groq                  # primary LLM provider
+      - google-genai          # current Google GenAI SDK (Gemini fallback)
+      # --- Web app (FastAPI + Uvicorn backend; React/Tailwind/shadcn SPA) ---
+      - fastapi               # JSON + NDJSON-streaming API; serves the built SPA
+      - uvicorn[standard]     # ASGI server
+      - python-multipart      # form handling
+      # --- plumbing ---
+      - pydantic>=2           # structured cross-agent objects
+      - python-dotenv         # .env loading
+      - hf_transfer           # accelerated/robust HF model downloads (see NOTES)
+      - pytest                # tests

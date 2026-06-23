@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Process | Where-Object { $_.ProcessName -match \"python|marker\" } | Select-Object Id, ProcessName, @{N=\"CPU\\(s\\)\";E={[math]::Round\\($_.CPU,1\\)}}, @{N=\"Mem\\(MB\\)\";E={[math]::Round\\($_.WorkingSet64/1MB\\)}} | Format-Table -AutoSize; Write-Output \"---datalab/marker caches---\"; foreach \\($p in @\\(\"$env:USERPROFILE\\\\.cache\\\\datalab\",\"$env:LOCALAPPDATA\\\\datalab\",\"$env:USERPROFILE\\\\.cache\\\\huggingface\\\\hub\"\\)\\) { if \\(Test-Path $p\\) { \"{0} :: {1:N0} MB\" -f $p, \\(\\(Get-ChildItem $p -Recurse -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum\\).Sum/1MB\\) } })",
+      "PowerShell(Stop-Process -Id 31364,17972,30076 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process python,marker_single -ErrorAction SilentlyContinue)",
+      "Bash(echo \"=== diag.log ===\"; cat \"c:/Users/rishi/Desktop/PMO agentic/data/processed/_diag.log\" 2>/dev/null | tr -d '\\\\r'; echo \"=== HF hub size ===\"; du -sh \"$HOME/.cache/huggingface/hub\" 2>/dev/null; ls \"$HOME/.cache/huggingface/hub\" 2>/dev/null | tr -d '\\\\r' | grep -i -E \"datalab|surya|marker\" )",
+      "Read(//c/Users/rishi/.cache/huggingface/hub/**)",
+      "PowerShell(Get-Process python -ErrorAction SilentlyContinue | Select-Object Id,@{N=\"CPU\";E={[math]::Round\\($_.CPU,1\\)}},@{N=\"MemMB\";E={[math]::Round\\($_.WorkingSet64/1MB\\)}} | Format-Table -AutoSize; Write-Output \"--- direct python exe ---\"; Test-Path \"C:\\\\miniconda\\\\envs\\\\pmo-intel-engine\\\\python.exe\")"
+    ]
+  }
+}
