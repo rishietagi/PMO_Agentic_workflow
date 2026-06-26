@@ -7,8 +7,8 @@ Guide 6th ed.**), surface gaps/risks, recommend grounded fixes, and produce an
 optimized plan with a **PMO compliance score and page-level citations that name
 the source book** — then capture feedback for continuous improvement.
 
-The architectural decisions, RAG strategy, and operating rules live in
-[CLAUDE.md](CLAUDE.md). This README is the operator's guide.
+The architecture, RAG strategy, and tech stack are documented in
+[docs/](docs/). This README is the operator's guide.
 
 ---
 
@@ -17,8 +17,8 @@ The architectural decisions, RAG strategy, and operating rules live in
 1. **Project Initiation** — extract a structured project definition from the SOW.
 2. **AI Plan Generation** — draft a plan with WBS, milestones, and one section
    per PMI knowledge area.
-3. **PMO Validation** *(core differentiator)* — hybrid RAG over the RITA
-   knowledge base, filtered per knowledge area, producing an alignment summary,
+3. **PMO Validation** *(core differentiator)* — hybrid RAG over the PMBOK
+   knowledge base (RITA optional), filtered per knowledge area, producing an alignment summary,
    gap detection, risk flags, and a **0–100 compliance score** — every finding
    cites a chapter/page.
 4. **Recommendations & Optimization** — severity-ranked gaps/risks (cross-
@@ -44,17 +44,18 @@ re-validated (bounded by a max-iterations setting).
 |---|---|
 | OCR / structure | marker-pdf (local) → structured elements; PyMuPDF+Tesseract per-page fallback |
 | Chunking | custom hierarchical, content-type-aware (ITTO/formula atomic; parent-doc store) |
-| Embeddings | BAAI/bge-base-en-v1.5 (local; GPU when CUDA available, else CPU) |
+| Embeddings | BAAI/bge-large-en-v1.5 (local; fp16 GPU) — with contextual breadcrumb prefixes |
 | Sparse | rank_bm25 (local) |
-| Fusion / rerank | Reciprocal Rank Fusion + cross-encoder/ms-marco-MiniLM-L-6-v2 (local) |
+| Fusion / rerank | Reciprocal Rank Fusion + BAAI/bge-reranker-v2-m3 (local, fp16 GPU; auto-fallback) |
 | Vector store | ChromaDB (persisted to `data/chroma_db/`) |
 | Orchestration | LangGraph |
 | LLM | Groq (`llama-3.3-70b-versatile` reasoning / `llama-3.1-8b-instant` cheap), Gemini (`gemini-2.5-flash`) fallback |
-| UI | FastAPI backend + React SPA (Vite · Tailwind · shadcn/ui · Recharts) |
+| UI | FastAPI backend + React SPA (Vite · Tailwind · shadcn/ui · Recharts · framer-motion) — exec dashboard + per-step analytics tabs |
 | Feedback | SQLite (`data/feedback.db`) |
+| Input | PDF upload (SOW/RFP) → PyMuPDF text extraction, or pasted text |
 
-Retrieval is **metadata-filtered first** (knowledge_area → RITA chapter), then
-hybrid dense+sparse, fused, reranked, and parent-expanded. See CLAUDE.md §5–§6.
+Retrieval is **metadata-filtered first** (knowledge_area → chapter), then
+hybrid dense+sparse, fused, reranked, and parent-expanded. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
@@ -99,7 +100,7 @@ pytest tests/ -v
 > the pre-built SPA served by uvicorn on :8000 is all you need.
 
 ### What to skip on repeat runs
-- **Don't** re-create the conda env or re-install deps (CLAUDE.md §2).
+- **Don't** re-create the conda env or re-install deps.
 - **Don't** re-run ingestion if `data/chroma_db/` is populated —
   `python scripts/check_vector_store.py` tells you (exit 0 = built).
 - `ingest_book.py` and `build_vector_store.py` are idempotent; pass `--rebuild`
@@ -124,8 +125,7 @@ a Groq key (Gemini is the fallback).
 
 Verified model IDs (2026-06-21): `llama-3.3-70b-versatile`,
 `llama-3.1-8b-instant`, `gemini-2.5-flash`. Newer `gemini-3.5-flash` /
-`gemini-3.1-flash-lite` exist and can be set via `GEMINI_MODEL` in `.env`
-(see NOTES.md). Free-tier limits change often — re-verify if picking this up
+`gemini-3.1-flash-lite` exist and can be set via `GEMINI_MODEL` in `.env`. Free-tier limits change often — re-verify if picking this up
 after a gap.
 
 ---
@@ -199,17 +199,15 @@ dashboard** aggregates.
 
 ## Repo layout
 
-See [CLAUDE.md §8](CLAUDE.md). Key entry points: `scripts/` (build + eval),
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Key entry points: `scripts/` (build + eval),
 `src/pmo_engine/` (retrieval, llm, agents), `app/streamlit_app.py`.
-
-Build decisions and quality findings are logged in [NOTES.md](NOTES.md).
 
 ---
 
 ## POC limitations
 
 - Single knowledge source (RITA); the ingestion pipeline is generic so internal
-  governance docs can be added later without redesign (CLAUDE.md §7).
+  governance docs can be added later without redesign.
 - No auth / multi-tenant storage — it's a single-user demo.
 - Feedback is captured but not used to retrain (Phase 2).
 - Free-tier LLM rate limits apply; the router does Groq→Gemini fallback with

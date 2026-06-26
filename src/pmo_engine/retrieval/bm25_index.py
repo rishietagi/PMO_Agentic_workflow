@@ -1,4 +1,4 @@
-"""Local BM25 sparse index (CLAUDE.md §3/§6).
+"""Local BM25 sparse index (the design spec).
 
 PM terminology (WBS, EVM, RACI, ITTO, specific PMI terms) needs exact-match
 retrieval alongside semantic search. Persisted as a pickle next to the Chroma

@@ -1,4 +1,4 @@
-"""ChromaDB wrapper + local BGE embeddings (CLAUDE.md §3).
+"""ChromaDB wrapper + local BGE embeddings (the design spec).
 
 Embeddings are computed locally with BAAI/bge-base-en-v1.5 (no API, no rate
 limits at query time — important for a live demo). The collection is persisted

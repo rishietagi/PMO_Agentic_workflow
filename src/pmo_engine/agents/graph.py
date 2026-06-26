@@ -1,4 +1,4 @@
-"""LangGraph state graph wiring the closed-loop PMO flow (CLAUDE.md §3).
+"""LangGraph state graph wiring the closed-loop PMO flow (the design spec).
 
     intake -> plan_generation -> validation -> gap_risk -> recommendations
            -> finalization --(needs_revision?)--> validation (loop) | END

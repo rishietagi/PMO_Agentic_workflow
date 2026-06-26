@@ -1,4 +1,4 @@
-"""Quick 'is the knowledge base already built?' check (CLAUDE.md §2 rule 4).
+"""Quick 'is the knowledge base already built?' check (the design spec).
 
 Future sessions / the app call this before deciding to (re)run the expensive
 ingestion. Exit code 0 = built & usable, 1 = not built.

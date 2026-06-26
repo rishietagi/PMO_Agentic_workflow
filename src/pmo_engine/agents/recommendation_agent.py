@@ -2,7 +2,7 @@
 
 Turns gaps/risks + validation findings into concrete, prioritized,
 RAG-grounded recommendations. Each recommendation cites a chapter/page so a
-PMO manager can trace it (CLAUDE.md §6.6). Reasoning tier.
+PMO manager can trace it (the design spec). Reasoning tier.
 """
 from __future__ import annotations
 

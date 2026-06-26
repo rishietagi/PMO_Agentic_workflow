@@ -1,7 +1,7 @@
 # Tech Stack — PMO Intelligence Engine
 
 Every technology in the system: what it is, the version/model used, why it was
-chosen, and how it's used here. Verified 2026-06-22.
+chosen, and how it's used here.
 
 ---
 
@@ -10,7 +10,7 @@ chosen, and how it's used here. Verified 2026-06-22.
 | Tech | Version | Why | How used |
 |---|---|---|---|
 | Python | 3.11 | Modern typing; broad ML lib support | All backend, agents, RAG, scripts |
-| Conda | env `pmo-intel-engine` | Reproducible, isolates heavy ML deps | The **only** env; never recreated once built (CLAUDE.md §2) |
+| Conda | env `pmo-intel-engine` | Reproducible, isolates heavy ML deps | The **only** env; never recreated once built (project operating rules) |
 | Node.js | ≥20 (26.3 installed) | Required to build the React/shadcn SPA | Build-time only (Vite); not a runtime server |
 | PyTorch | 2.12.1+cu126 (CUDA) | GPU acceleration for embeddings/reranking | `config.resolve_device()` → `cuda` when available, else `cpu` |
 | GPU | NVIDIA (dev: RTX 3050, **4 GB**) | Faster embeddings/vectors at build + query time | Embeddings + reranker run on GPU; **OCR stays on CPU** — 4 GB is too small for marker's 5–6 simultaneous surya models (proven to thrash). Override per-process via `PMO_DEVICE`/`TORCH_DEVICE`. |
@@ -25,7 +25,7 @@ chosen, and how it's used here. Verified 2026-06-22.
 | PyMuPDF (fitz) | latest | RITA: page render for OCR fallback. **PMBOK: full text extraction** — it's a digital PDF, so no OCR | `scripts/ingest_pmbok.py` → structure recovered from PMBOK section numbering ("5.1 …"); much faster than OCR |
 | pytesseract + Pillow | latest | Per-page OCR fallback for pages marker mangles | `ocr/extract_structure.ocr_page_fallback` (degrades gracefully if Tesseract absent) |
 | tiktoken | latest | `cl100k_base` as a token-length heuristic | Chunk sizing (~300–600 tokens) |
-| hf_xet, hf_transfer | latest | Accelerate/robustify HF model downloads (Xet-backed repos were the real throttle) | Env vars during model fetch (see NOTES.md) |
+| hf_xet, hf_transfer | latest | Accelerate/robustify HF model downloads (Xet-backed repos were the real throttle) | Env vars during model fetch |
 
 ---
 
@@ -54,7 +54,7 @@ chosen, and how it's used here. Verified 2026-06-22.
 | groq | latest | Groq SDK | Wrapped; only the router imports it |
 
 Routing/fallback/backoff centralized in `llm/router.py`; agents never call a
-provider SDK directly. Model IDs verified live 2026-06-21 (see NOTES.md);
+provider SDK directly. Model IDs verified live 2026-06-21;
 re-verify after gaps — free-tier names/limits drift.
 
 ---
@@ -72,7 +72,7 @@ re-verify after gaps — free-tier names/limits drift.
 
 | Tech | Version | Why | How used |
 |---|---|---|---|
-| FastAPI | 0.138 | Async API + native streaming; serves the built SPA | `app/main.py`: `/api/status,/run,/feedback,/dashboard,/sample-sow`, `/` |
+| FastAPI | 0.138 | Async API + native streaming; serves the built SPA | `app/main.py`: `/api/status,/run,/upload-sow,/feedback,/dashboard,/sample-sow`, `/` |
 | Uvicorn | latest (`[standard]`) | ASGI server | `uvicorn app.main:app` |
 | NDJSON over StreamingResponse | — | Stream per-step progress to the browser without WebSockets; sync generator runs in a threadpool | `/api/run` |
 | SQLite (stdlib) | — | Enough for POC feedback capture | `data/feedback.db` (`feedback`, `gap_events`) |
@@ -88,8 +88,9 @@ re-verify after gaps — free-tier names/limits drift.
 | Tailwind CSS | 3.4 | Utility styling; design tokens via CSS vars | `tailwind.config.js`, `src/index.css` |
 | shadcn/ui pattern | Radix + CVA | Accessible, themeable primitives (vendored as source, not via CLI) | `components/ui/*` (button, card, tabs, badge, progress, textarea, switch, select, separator) |
 | Radix UI | latest | Headless a11y primitives behind shadcn components | tabs, switch, progress, select, slot, separator |
-| Recharts | 2.15 | Analytics charts | Radial compliance gauge, per-section score bars, gap/risk donut, dashboard bars |
+| Recharts | 2.15 | Analytics charts | Compliance gauge + rings, KA radar, KA compliance heatmap, likelihood×impact risk matrix, concentration treemap, donuts, KPI tiles (`lib/analytics.js`) |
 | lucide-react | latest | Icon set | Throughout the UI |
+| framer-motion | latest | Entrance/stagger animations | Executive dashboard + step intros |
 | class-variance-authority, clsx, tailwind-merge | latest | Variant + class composition (the `cn` helper) | `lib/utils.js`, component variants |
 
 ---

@@ -1,4 +1,4 @@
-"""Phase 3 — Retrieval sanity-check harness (CLAUDE.md §6.8).
+"""Phase 3 — Retrieval sanity-check harness (the design spec).
 
 A fixed set of test queries with a known-correct expected chapter. Asserts the
 expected chapter appears in the top-3 reranked results. Pure retrieval — no LLM

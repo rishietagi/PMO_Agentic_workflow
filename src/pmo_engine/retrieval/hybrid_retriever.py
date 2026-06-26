@@ -1,4 +1,4 @@
-"""Hybrid retriever (CLAUDE.md §6).
+"""Hybrid retriever (the design spec).
 
 Pipeline per query:
   1. Metadata pre-filter by knowledge_area (the single biggest precision lever
@@ -139,7 +139,7 @@ class HybridRetriever:
                              content_types: list[str] | None = None,
                              top_k_per_query: int = config.RERANK_TOP_K
                              ) -> list[RetrievedChunk]:
-        """Run several sub-queries (CLAUDE.md §6.3) and dedupe by chunk_id."""
+        """Run several sub-queries (the design spec) and dedupe by chunk_id."""
         seen: dict[str, RetrievedChunk] = {}
         for q in queries:
             for rc in self.retrieve(q, knowledge_area=knowledge_area,

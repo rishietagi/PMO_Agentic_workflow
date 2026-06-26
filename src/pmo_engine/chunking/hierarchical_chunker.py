@@ -1,11 +1,11 @@
-"""Phase 2 — Hierarchical, content-type-aware chunker (CLAUDE.md §5).
+"""Phase 2 — Hierarchical, content-type-aware chunker (the design spec).
 
 Consumes the normalized StructuredElement list from Phase 1 and produces:
   * a list of `Chunk`s (the small, precisely-tagged units that get embedded),
   * a parent-section store (section_path -> full section text) for small-to-big
     retrieval expansion.
 
-Design points (all from §5):
+Design points:
   1. Primary split by heading hierarchy (chapter > section > subsection), not
      fixed windows.
   2. Content-type-aware: ITTO tables and formulas stay atomic; Ch.1 tips and
@@ -46,7 +46,7 @@ except Exception:  # noqa: BLE001 - tiktoken optional at import time
 class Chunk:
     chunk_id: str
     text: str
-    # required metadata (CLAUDE.md §5.5)
+    # required metadata (the design spec)
     chapter_number: int
     chapter_title: str
     knowledge_area: str

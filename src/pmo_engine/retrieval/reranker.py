@@ -1,4 +1,4 @@
-"""Local cross-encoder reranker (CLAUDE.md §3/§6.4).
+"""Local cross-encoder reranker (the design spec).
 
 Reranks the fused hybrid shortlist down to the few chunks that actually enter
 the LLM context. Runs locally on CPU — no API budget spent.

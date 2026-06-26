@@ -1,7 +1,7 @@
 """Agent 1 — Intake (Step 1: Project Input / SOW).
 
 Turns a free-text SOW into a structured ProjectInput. This is a cheap,
-high-volume extraction step -> CHEAP tier (8B instant) per CLAUDE.md §3.
+high-volume extraction step -> CHEAP tier (8B instant) per the design spec
 """
 from __future__ import annotations
 

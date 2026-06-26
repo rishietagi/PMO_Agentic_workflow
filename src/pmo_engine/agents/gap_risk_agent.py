@@ -4,7 +4,7 @@ Consolidates the Validation Agent's gaps/risk flags into a severity-ranked
 RiskGapList, and enriches it by cross-referencing the Risk chapter (Ch.11) and
 the 'Common Project Management Errors and Pitfalls' content (Ch.14) — exactly
 the curated 'what PMI flags as mistakes' material this agent should check
-against (CLAUDE.md §1/§5.3). Citations carried through.
+against (the design spec). Citations carried through.
 """
 from __future__ import annotations
 

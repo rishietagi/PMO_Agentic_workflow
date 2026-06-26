@@ -83,7 +83,7 @@ text to a public remote (enforced via `.gitignore`).
   compliance score, open items.
 - **Feedback** — ratings/comments + flagged-gap aggregates.
 
-Every finding and recommendation cites a specific RITA chapter/page.
+Every finding and recommendation cites a specific chapter/page, naming the source book (e.g. "PMBOK Ch.11, p.397").
 
 ---
 
@@ -92,9 +92,12 @@ Every finding and recommendation cites a specific RITA chapter/page.
 **In scope (POC):**
 - End-to-end pipeline from SOW → optimized, scored, cited plan.
 - Hybrid RAG (metadata-filtered, dense+sparse, reranked, parent-expanded) over
-  the real RITA content.
+  the PMBOK content (bge-large + bge-reranker-v2-m3 + contextual breadcrumbs).
 - LangGraph orchestration including the feedback-loop edge.
-- Polished web UI (React/Tailwind/shadcn) with analytics charts.
+- Polished web UI (React/Tailwind/shadcn/Recharts/framer-motion): a unified
+  executive dashboard (Project Readiness Index, compliance gauge, KA radar +
+  compliance heatmap, likelihood×impact risk matrix) plus a per-step analytics
+  tab for each PMO stage. PDF (SOW/RFP) upload via PyMuPDF, or pasted text.
 - Feedback capture + aggregate dashboard.
 
 **Out of scope (explicitly Phase 2):**
@@ -125,20 +128,24 @@ Every finding and recommendation cites a specific RITA chapter/page.
 
 ## 7. Status (POC)
 
-- **Code:** complete across all phases — env, ingestion, chunking, retrieval,
-  LLM router, all 6 agents, LangGraph, feedback store, React/FastAPI UI, docs.
-- **Validated with real keys:** full agent pipeline (router incl. 429
-  backoff + Gemini fallback, all agents, graph, citation grounding,
-  serialization) via `scripts/_smoke_pipeline.py`; FastAPI serving the SPA;
-  18 unit tests passing.
-- **Knowledge base:** real 551-page RITA OCR → vector store runs unattended via
-  `scripts/_finish_build.py` (marker model download was CDN-throttled; full CPU
-  OCR is multi-hour). A **synthetic placeholder KB** (`_seed_demo_kb.py`,
-  `knowledge_base="DEMO_synthetic"`) lets the full UI/pipeline be exercised
-  before the real OCR completes; the finisher overwrites it (`--rebuild`).
-
-See the build-status checklist in `CLAUDE.md §10` and the running log in
-`NOTES.md`.
+- **Code:** complete across all phases — env, multi-book ingestion, chunking,
+  retrieval, LLM router, all 6 agents, LangGraph, feedback store, React/FastAPI
+  UI, docs.
+- **Active knowledge base:** **PMBOK 6th** (text extraction, no OCR) — 543
+  chunks across all ten knowledge areas, **100% chapter@5** and ~93% passage@1
+  on the retrieval eval. RITA is supported but optional (OCR impractical on the
+  dev hardware).
+- **Retrieval (GPU):** bge-large-en-v1.5 embeddings + bge-reranker-v2-m3
+  (fp16), contextual breadcrumb embedding, hybrid RRF + parent expansion.
+- **UI:** unified executive dashboard (Project Readiness Index + scoring,
+  KA radar, compliance heatmap, risk matrix) + per-step analytics tabs;
+  PDF (SOW/RFP) upload.
+- **Resilience:** the LLM router retries Groq (429) and Gemini (503/overload)
+  with backoff, then degrades a reasoning step to the high-cap 8B model so a
+  transient provider outage doesn't fail a run.
+- **Validated:** full agent pipeline with real keys via
+  `scripts/_smoke_pipeline.py`; FastAPI serving the SPA; 18 unit tests passing;
+  retrieval eval via `scripts/eval_retrieval.py [--detailed]`.
 
 ---
 

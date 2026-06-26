@@ -1,4 +1,4 @@
-"""Feedback capture (CLAUDE.md §7) — SQLite, instrumentation only.
+"""Feedback capture (the design spec) — SQLite, instrumentation only.
 
 This is where Steps 7-8 (Feedback Loop / Continuous Improvement) are
 instrumented for the POC. It captures user ratings/comments on an

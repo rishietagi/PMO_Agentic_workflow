@@ -23,7 +23,7 @@ FEEDBACK_DB_PATH = DATA_DIR / "feedback.db"
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 
 # Default source PDF. NOTE: actual file ships with spaces in the name; the
-# CLAUDE.md reference uses underscores. We default to the real on-disk name.
+# the design spec reference uses underscores. We default to the real on-disk name.
 DEFAULT_PDF_PATH = RAW_DIR / "RITA 10th Edition.pdf"
 PMBOK_PDF_PATH = RAW_DIR / "PMBOK_Guide_6th.pdf"
 
@@ -82,7 +82,7 @@ def google_key_present() -> bool:
 GROQ_MODEL_LARGE = os.getenv("GROQ_MODEL_LARGE", "llama-3.3-70b-versatile")
 GROQ_MODEL_SMALL = os.getenv("GROQ_MODEL_SMALL", "llama-3.1-8b-instant")
 # gemini-2.5-flash is the documented safe free-tier default. Newer
-# gemini-3.5-flash / gemini-3.1-flash-lite exist (see NOTES.md) — override
+# gemini-3.5-flash / gemini-3.1-flash-lite may exist — override
 # via GEMINI_MODEL if confirmed available on your key.
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
@@ -109,7 +109,7 @@ HYBRID_TOP_K = 20             # fused shortlist size before rerank
 RERANK_TOP_K = 5             # final chunks into the LLM context
 RRF_K = 60                    # reciprocal rank fusion constant
 
-# --- Knowledge-area / chapter map (CLAUDE.md §1, verified by inspection) ----
+# --- Knowledge-area / chapter map (the design spec, verified by inspection) ----
 # chapter_number -> metadata. knowledge_area is the retrieval pre-filter key.
 CHAPTER_MAP: dict[int, dict[str, str]] = {
     1: {"title": "Tricks of the Trade for Studying for This Exam",

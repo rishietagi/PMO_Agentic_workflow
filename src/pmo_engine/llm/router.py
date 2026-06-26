@@ -1,4 +1,4 @@
-"""LLM router (CLAUDE.md §3/§4/§9).
+"""LLM router (the design spec).
 
 Single entry point for every LLM call in the system. Responsibilities:
   * Cheap-vs-expensive routing: CHEAP tier -> Groq llama-3.1-8b-instant for

@@ -34,3 +34,7 @@ conda_create.log
 frontend/node_modules/
 frontend/npm_install.log
 app/spa/
+
+# Claude / AI build artifacts — kept local, not published to GitHub
+.claude/
+NOTES.md

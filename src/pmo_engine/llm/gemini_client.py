@@ -1,7 +1,7 @@
 """Thin Gemini client wrapper (current google-genai SDK). Router-only import.
 
 Used as the fallback when Groq is rate-limited, and for second-opinion
-validation scoring. Per CLAUDE.md §4: free tier is Flash/Flash-Lite only;
+validation scoring. Per the design spec: free tier is Flash/Flash-Lite only;
 don't send anything beyond RITA content + synthetic SOWs through it.
 """
 from __future__ import annotations

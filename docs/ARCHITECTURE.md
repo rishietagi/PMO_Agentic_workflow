@@ -26,7 +26,7 @@ see [TECH_STACK.md](TECH_STACK.md); for product scope see
  backoff + fallback                  │                                    │
                                      ▼                                    ▼
                             Pydantic state objects              ChromaDB + BM25 + parent
-                                     │                          store (built from RITA OCR)
+                                     │                          store (PMBOK; RITA optional)
                                      ▼
                             SQLite feedback store
 ```
@@ -51,7 +51,7 @@ scripts/build_vector_store.py  (combines ALL ingested books into ONE store)
   for each book: chunking/hierarchical_chunker.py(chapter_map, knowledge_base)
                  → Chunk[] (id-prefixed per book) + parent sections
                  + per-(book,chapter) LLM chapter summaries
-  ├─ embed (BAAI/bge-base-en-v1.5, GPU when available) → ChromaDB (one collection)
+  ├─ embed (BAAI/bge-large-en-v1.5 fp16 GPU; breadcrumb-prefixed) → ChromaDB
   ├─ BM25 (rank_bm25) over the union                   → data/bm25_index.pkl
   └─ parent sections                                    → data/parent_store.json
 
@@ -93,7 +93,7 @@ section (knowledge_area=Scope)
   2. metadata filter    Chroma where{knowledge_area=Scope}   ← before search
   3. hybrid retrieve    dense (BGE cosine) + sparse (BM25)
   4. RRF fuse           reciprocal rank fusion (k=60)
-  5. rerank             cross-encoder/ms-marco-MiniLM-L-6-v2 → top 5
+  5. rerank             BAAI/bge-reranker-v2-m3 (fp16 GPU) → top 5
   6. parent expand      small chunk → full parent section text
   7. synthesize         LLM (70B): score 0–100 + findings, each tagged with
                         evidence ids → citations mapped from REAL chunk metadata
@@ -126,7 +126,9 @@ overall score.
   classification). `TaskTier.REASONING` → Groq `llama-3.3-70b-versatile`
   (validation synthesis, recommendations, finalization).
 - Groq primary with exponential backoff + jitter on 429; on exhaustion/error
-  → **Gemini `gemini-2.5-flash`** fallback.
+  → **Gemini `gemini-2.5-flash`** fallback (also retried with backoff on
+  transient 503/overload); if both are down, a REASONING step **degrades to
+  Groq's high-cap 8B model** so a transient provider outage doesn't fail a run.
 - `complete_json()` tolerates fenced/loose JSON. No agent calls a provider SDK
   directly — routing/fallback stay centralized.
 
@@ -168,11 +170,17 @@ sections — the primary precision lever.
 ## 9. Frontend structure (`frontend/src/`)
 
 - `App.jsx` — layout shell (Sidebar + view switch: Run / Dashboard).
-- `components/RunView.jsx` — SOW input, options, NDJSON run + live `Stepper`.
-- `components/ResultsView.jsx` — tabs (Initiation/Plan/Validation/Gaps·Recs/
-  Optimized), hero gauge, charts, `FindingCard`s with citation chips.
+- `components/RunView.jsx` — SOW **PDF upload** / paste, options, NDJSON run +
+  live `Stepper`.
+- `components/ExecutiveDashboard.jsx` — unified scoring: Project Readiness Index,
+  KPI tiles, compliance gauge + rings, KA radar, compliance heatmap, risk matrix.
+- `components/ResultsView.jsx` — leads with the Executive Dashboard, then a
+  per-step tab for each of the 6 PMO stages (each with an explanation + tailored
+  analytics) and `FindingCard`s with citation chips.
+- `components/Charts.jsx` — Recharts viz library: gauge, rings, radar, KA
+  heatmap, likelihood×impact risk matrix, concentration treemap, donuts,
+  category bars, KPI tiles.
 - `components/Dashboard.jsx` — feedback metrics + charts.
-- `components/Charts.jsx` — Recharts (radial gauge, section bars, breakdown pie).
-- `components/ui/*` — shadcn/ui primitives (button, card, tabs, badge, progress,
-  textarea, switch, select, separator).
-- `lib/api.js` — fetch + NDJSON stream reader. `lib/utils.js` — `cn`, score color.
+- `components/ui/*` — shadcn/ui primitives. `framer-motion` for entrance animation.
+- `lib/analytics.js` — pure derivations (readiness index, KA scores, risk matrix,
+  distributions). `lib/api.js` — fetch + NDJSON stream reader + PDF upload.
