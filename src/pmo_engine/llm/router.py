@@ -96,16 +96,50 @@ class LLMRouter:
                     logger.warning("Groq error (%s); falling back to Gemini.", exc)
                     break
 
-        # 2) Gemini fallback.
+        # 2) Gemini fallback — with backoff on transient overload/limits
+        #    (503 UNAVAILABLE / 429 / 500 are routine and self-heal).
         if self._gemini_ok:
-            try:
-                logger.info("Routing to Gemini fallback (%s).", config.GEMINI_MODEL)
-                return self.gemini.chat(system, user, temperature=temperature,
-                                        max_tokens=max_tokens, json_mode=json_mode)
-            except Exception as exc:  # noqa: BLE001
-                raise LLMUnavailableError(f"Both providers failed: {exc}") from exc
+            for attempt in range(self.max_retries):
+                try:
+                    logger.info("Routing to Gemini fallback (%s), attempt %d/%d.",
+                                config.GEMINI_MODEL, attempt + 1, self.max_retries)
+                    return self.gemini.chat(system, user, temperature=temperature,
+                                            max_tokens=max_tokens,
+                                            json_mode=json_mode)
+                except Exception as exc:  # noqa: BLE001
+                    if not _is_transient(exc) or attempt == self.max_retries - 1:
+                        logger.warning("Gemini failed (%s).", str(exc)[:120])
+                        break
+                    delay = self.base_delay * (2 ** attempt) + random.uniform(0, 1)
+                    logger.warning("Gemini transient (%s); backing off %.1fs",
+                                   str(exc)[:80], delay)
+                    time.sleep(delay)
 
-        raise LLMUnavailableError("Groq failed and no Gemini fallback configured.")
+        # 3) Last resort: degrade a REASONING step to Groq's small, high-cap
+        #    model so the pipeline still completes when the 70B daily cap is
+        #    hit AND Gemini is momentarily down. Lower quality, but it finishes.
+        if self._groq_ok and tier == TaskTier.REASONING:
+            logger.warning("Both providers struggled; degrading to Groq %s.",
+                           config.GROQ_MODEL_SMALL)
+            for attempt in range(self.max_retries):
+                try:
+                    return self.groq.chat(system, user,
+                                          model=config.GROQ_MODEL_SMALL,
+                                          temperature=temperature,
+                                          max_tokens=max_tokens,
+                                          json_mode=json_mode)
+                except GroqRateLimitError:
+                    if attempt == self.max_retries - 1:
+                        break
+                    time.sleep(self.base_delay * (2 ** attempt) + random.uniform(0, 1))
+                except Exception:  # noqa: BLE001
+                    break
+
+        raise LLMUnavailableError(
+            "All providers/models are exhausted or unavailable right now "
+            "(Groq rate/daily limit + Gemini overload). This is usually "
+            "transient — wait a few minutes and re-run. If it persists, your "
+            "Groq daily free-tier cap may be used up until it resets.")
 
     def complete_json(self, system: str, user: str,
                       tier: TaskTier = TaskTier.REASONING,
@@ -115,6 +149,19 @@ class LLMRouter:
         raw = self.complete(system, user, tier=tier, temperature=temperature,
                             max_tokens=max_tokens, json_mode=True)
         return _extract_json(raw)
+
+
+_TRANSIENT_MARKERS = (
+    "503", "unavailable", "overloaded", "high demand", "429", "rate limit",
+    "resource_exhausted", "500", "internal", "timeout", "timed out",
+    "deadline", "temporarily", "try again",
+)
+
+
+def _is_transient(exc: Exception) -> bool:
+    """True for retryable provider hiccups (overload / rate-limit / 5xx)."""
+    s = str(exc).lower()
+    return any(k in s for k in _TRANSIENT_MARKERS)
 
 
 def _extract_json(raw: str) -> dict[str, Any]:

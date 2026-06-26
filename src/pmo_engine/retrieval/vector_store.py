@@ -26,9 +26,14 @@ class _Embedder:
         if cls._model is None:
             from sentence_transformers import SentenceTransformer
             device = config.resolve_device()
-            logger.info("Loading embedding model %s on %s ...",
-                        config.EMBEDDING_MODEL, device)
+            logger.info("Loading embedding model %s on %s (fp16=%s) ...",
+                        config.EMBEDDING_MODEL, device, config.use_fp16())
             cls._model = SentenceTransformer(config.EMBEDDING_MODEL, device=device)
+            if config.use_fp16():
+                try:
+                    cls._model.half()
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("fp16 cast failed (%s); using fp32.", exc)
         return cls._model
 
     @classmethod
@@ -78,8 +83,11 @@ class VectorStore:
             return 0
 
     def add(self, ids: list[str], texts: list[str],
-            metadatas: list[dict[str, Any]]) -> None:
-        embeddings = _Embedder.embed_documents(texts)
+            metadatas: list[dict[str, Any]],
+            embed_texts: list[str] | None = None) -> None:
+        # `embed_texts` (breadcrumb + body) is what gets embedded; the clean
+        # `texts` is what gets stored/displayed (contextual retrieval).
+        embeddings = _Embedder.embed_documents(embed_texts or texts)
         # Chroma rejects None metadata values; coerce.
         clean = [{k: ("" if v is None else v) for k, v in m.items()}
                  for m in metadatas]

@@ -34,8 +34,8 @@ chosen, and how it's used here. Verified 2026-06-22.
 | Tech | Version/Model | Why | How used |
 |---|---|---|---|
 | sentence-transformers | latest | Local embeddings + reranking; no rate limits at demo time | Loads BGE + cross-encoder |
-| Embeddings | **BAAI/bge-base-en-v1.5** | Strong quality/speed on CPU for a few thousand chunks; free | Dense vectors for Chroma; query prefix applied |
-| Reranker | **cross-encoder/ms-marco-MiniLM-L-6-v2** | Fast CPU reranking of a top-20 shortlist | Rerank fused results → top 5 |
+| Embeddings | **BAAI/bge-large-en-v1.5** (fp16 GPU) | Stronger retrieval than bge-base; fp16 fits 4 GB | Dense vectors for Chroma; **breadcrumb-prefixed** text embedded (contextual retrieval); query prefix applied |
+| Reranker | **BAAI/bge-reranker-v2-m3** (fp16 GPU; falls back to bge-reranker-base → MiniLM) | Much stronger cross-encoder than MiniLM | Rerank fused top-20 → top 5 |
 | ChromaDB | latest | Zero-infra persisted vector store with metadata filtering | `data/chroma_db/`; KA pre-filter before search |
 | rank_bm25 | latest | Exact-match for PM acronyms (WBS, EVM, RACI, ITTO) that embeddings miss | Sparse index; pickled to `data/bm25_index.pkl` |
 | Fusion | Reciprocal Rank Fusion (k=60) | Rank-based, no hand-tuned weights | Combine dense + sparse rankings |

@@ -102,3 +102,44 @@ Newest entries at the bottom of each phase.
   serialization) end-to-end against a small synthetic vector store using the
   real Groq/Gemini keys, so the only thing the real book OCR changes is the
   knowledge-base content, not any code path. See `scripts/_smoke_pipeline.py`.
+
+## Retrieval quality upgrade — Tier 1 + Tier 2 (2026-06-23)
+
+GPU-accelerated retrieval improvements (PMBOK active KB). Measured with the new
+`scripts/eval_retrieval.py --detailed` (MRR + keyword-hit@1/@5) over 28 queries
+incl. indirectly-worded ones; the sensitive comparison is **no knowledge-area
+filter**:
+
+| metric (no-filter, n=28) | baseline (bge-base) | after |
+|---|---|---|
+| chapter@5 | 96% | 100% |
+| chapter-MRR | 0.927 | 0.948 |
+| keyword-hit@1 | 89% | 93% |
+| keyword-MRR | 0.921 | 0.943 |
+| keyword-hit@5 | 100% | 96% |
+
+NOTE: with the KA pre-filter on (the app's normal path) retrieval was already
+~saturated (≈100%) on realistic single-book queries, so the headroom is in the
+hard / no-filter regime and in correctness (below).
+
+Changes:
+- **Tier 2.1 models (GPU, fp16):** embeddings bge-base → **bge-large-en-v1.5**;
+  reranker MiniLM-L-6 → **bge-reranker-v2-m3** (fallback bge-reranker-base →
+  MiniLM). Peak VRAM 3.46 GB of 4 GB. `config.use_fp16()`.
+- **Tier 1.3 contextual retrieval:** each chunk embedded/BM25-indexed with a
+  breadcrumb prefix `[BOOK | KnowledgeArea | section]`; stored/displayed text
+  stays clean (`Chunk.embed_text()`; `VectorStore.add(embed_texts=)`,
+  `BM25Index.build(embed_texts=)`).
+- **Tier 1.1 PMBOK extraction:** forward-only chapter logic (a backward "5.x"
+  while deep in ch.11 is treated as a cross-reference, not a heading → fixes the
+  p.608-type mis-tags) + **Part 2 / back-matter cutoff after ch.13** (removes
+  the Standard's duplication). Chunk count **996 → 543**.
+- **Tier 1.2 overlap:** sentence-aware, token-based overlap applied consistently
+  (replaces word-tail-on-big-sections-only).
+- **Tier 2.2 ITTO tagging:** title-based detection of Inputs / Tools and
+  Techniques / Outputs subsections → **302 `itto` chunks** (was 0), restoring
+  structured signal to the validation + Gap/Risk agents.
+- Eval harness gained `--detailed` (MRR, keyword-hit@1/@5) and adaptive
+  chapter-skipping for whatever books are loaded.
+- Deferred (low ROI): image-table OCR extraction — PMBOK ITTO are text lists
+  already captured by 2.2.

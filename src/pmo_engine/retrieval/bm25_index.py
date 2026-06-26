@@ -31,12 +31,14 @@ class BM25Index:
         self.texts: list[str] = []
 
     def build(self, chunk_ids: list[str], texts: list[str],
-              metadatas: list[dict[str, Any]]) -> None:
+              metadatas: list[dict[str, Any]],
+              embed_texts: list[str] | None = None) -> None:
         from rank_bm25 import BM25Okapi
         self.chunk_ids = chunk_ids
-        self.texts = texts
+        self.texts = texts            # clean text for display
         self.metadatas = metadatas
-        corpus = [tokenize(t) for t in texts]
+        # tokenize breadcrumb+body so KA/section/acronym terms boost sparse hits
+        corpus = [tokenize(t) for t in (embed_texts or texts)]
         self._bm25 = BM25Okapi(corpus)
         logger.info("Built BM25 index over %d docs.", len(texts))
 

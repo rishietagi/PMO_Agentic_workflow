@@ -137,7 +137,8 @@ def refresh_summaries_only() -> int:
         except Exception:  # noqa: BLE001
             pass
         vs.add(ids=ids, texts=[c.text for c in summaries],
-               metadatas=[c.metadata() for c in summaries])
+               metadatas=[c.metadata() for c in summaries],
+               embed_texts=[c.embed_text() for c in summaries])
         logger.info("Refreshed %d summaries for %s.", len(summaries), kb_name)
     return 0
 
@@ -177,16 +178,20 @@ def main() -> int:
         all_chunks.extend(chunks)
         parent_store.update(parents)
 
-    logger.info("Embedding + loading %d chunks into Chroma ...", len(all_chunks))
+    logger.info("Embedding + loading %d chunks into Chroma (contextual "
+                "breadcrumbs) ...", len(all_chunks))
+    embed_texts = [c.embed_text() for c in all_chunks]
     vs.add(ids=[c.chunk_id for c in all_chunks],
            texts=[c.text for c in all_chunks],
-           metadatas=[c.metadata() for c in all_chunks])
+           metadatas=[c.metadata() for c in all_chunks],
+           embed_texts=embed_texts)
 
     logger.info("Building combined BM25 index ...")
     bm = BM25Index()
     bm.build([c.chunk_id for c in all_chunks],
              [c.text for c in all_chunks],
-             [c.metadata() for c in all_chunks])
+             [c.metadata() for c in all_chunks],
+             embed_texts=embed_texts)
     bm.save()
 
     config.PARENT_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)

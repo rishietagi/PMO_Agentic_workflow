@@ -86,9 +86,17 @@ GROQ_MODEL_SMALL = os.getenv("GROQ_MODEL_SMALL", "llama-3.1-8b-instant")
 # via GEMINI_MODEL if confirmed available on your key.
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
-# --- Local models ----------------------------------------------------------
-EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
-RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+# --- Local models (upgraded for GPU; fp16 keeps them inside 4 GB VRAM) ------
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-large-en-v1.5")
+RERANKER_MODEL = os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
+# tried in order if the primary reranker fails to load (e.g. VRAM):
+RERANKER_FALLBACKS = ["BAAI/bge-reranker-base",
+                      "cross-encoder/ms-marco-MiniLM-L-6-v2"]
+
+
+def use_fp16() -> bool:
+    """Half precision on CUDA (halves VRAM, ~same quality). Off on CPU."""
+    return resolve_device() == "cuda" and os.getenv("PMO_FP16", "1") != "0"
 
 # --- Chunking knobs --------------------------------------------------------
 CHUNK_TARGET_TOKENS = 450      # midpoint of the 300-600 target band

@@ -8,6 +8,9 @@ data/chroma_db/
 data/parent_store.json
 data/feedback.db
 outputs/
+.cladue/
+
+CLAUDE.md
 
 # Python
 __pycache__/

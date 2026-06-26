@@ -64,6 +64,18 @@ class Chunk:
         d.pop("chunk_id")
         return d
 
+    def breadcrumb(self) -> str:
+        """Contextual prefix (book · knowledge area · section) added to the
+        embedded/indexed text so retrieval is KA- and source-aware."""
+        tail = self.section_path.split(" > ")[-1] if self.section_path else ""
+        return (f"[{config.kb_abbrev(self.knowledge_base)} | "
+                f"{self.knowledge_area} | {tail}]").replace(" | ]", "]")
+
+    def embed_text(self) -> str:
+        """What actually gets embedded + BM25-indexed (breadcrumb + body).
+        The stored/displayed document stays the clean `text`."""
+        return f"{self.breadcrumb()}\n{self.text}"
+
 
 # --- chapter / process-group detection -------------------------------------
 _WORD_NUM = {
@@ -128,7 +140,15 @@ def _detect_process_group(section_path: str) -> str:
     return ""
 
 
+_ITTO_TITLE_RE = re.compile(
+    r"\b(inputs|tools and techniques|outputs)\b\s*$", re.I)
+
+
 def _looks_itto(text: str, nearby: str) -> bool:
+    # PMBOK marks ITTO as subsections titled "… : Inputs / Tools and
+    # Techniques / Outputs" — detect that on the section path/title first.
+    if _ITTO_TITLE_RE.search(nearby.strip()):
+        return True
     blob = (text + " " + nearby).lower()
     hits = sum(k in blob for k in ("input", "tool", "technique", "output"))
     return hits >= 2
@@ -235,45 +255,54 @@ def _group_into_sections(elements: list[StructuredElement],
 
 
 # --- chunk emission --------------------------------------------------------
-def _recursive_split(text: str, max_tokens: int, overlap: int) -> list[str]:
-    """Split overlong narrative text on paragraph/sentence boundaries."""
+def _split_sentences(text: str) -> list[str]:
+    # split on paragraph breaks first, then sentence boundaries
+    sents: list[str] = []
+    for para in re.split(r"\n{2,}", text):
+        para = para.strip()
+        if not para:
+            continue
+        sents.extend(s.strip() for s in re.split(r"(?<=[.!?])\s+", para)
+                     if s.strip())
+    return sents
+
+
+def _recursive_split(text: str, max_tokens: int, overlap_tokens: int) -> list[str]:
+    """Sentence-aware packing with consistent token-level overlap.
+
+    Greedily packs whole sentences up to `max_tokens`; each new piece starts
+    with the trailing sentences of the previous piece worth ~`overlap_tokens`,
+    so adjacent chunks share context (better recall at boundaries).
+    """
     if count_tokens(text) <= max_tokens:
         return [text]
-    paras = re.split(r"\n{2,}", text)
+    sents = _split_sentences(text)
     pieces: list[str] = []
-    buf = ""
-    for p in paras:
-        cand = (buf + "\n\n" + p).strip() if buf else p
-        if count_tokens(cand) <= max_tokens:
-            buf = cand
-        else:
-            if buf:
-                pieces.append(buf)
-            if count_tokens(p) <= max_tokens:
-                buf = p
-            else:  # a single giant paragraph: split by sentences
-                sents = re.split(r"(?<=[.!?])\s+", p)
-                sb = ""
-                for s in sents:
-                    c = (sb + " " + s).strip() if sb else s
-                    if count_tokens(c) <= max_tokens:
-                        sb = c
-                    else:
-                        if sb:
-                            pieces.append(sb)
-                        sb = s
-                buf = sb
-    if buf:
-        pieces.append(buf)
+    cur: list[str] = []
+    cur_tok = 0
 
-    # add ~overlap tokens of tail from previous piece to the next
-    if overlap > 0 and len(pieces) > 1:
-        out = [pieces[0]]
-        for i in range(1, len(pieces)):
-            prev_words = pieces[i - 1].split()
-            tail = " ".join(prev_words[-overlap:]) if prev_words else ""
-            out.append((tail + " " + pieces[i]).strip())
-        pieces = out
+    def overlap_tail(prev: list[str]) -> list[str]:
+        if overlap_tokens <= 0:
+            return []
+        tail, tok = [], 0
+        for s in reversed(prev):
+            t = count_tokens(s)
+            if tok + t > overlap_tokens and tail:
+                break
+            tail.insert(0, s)
+            tok += t
+        return tail
+
+    for s in sents:
+        st = count_tokens(s)
+        if cur and cur_tok + st > max_tokens:
+            pieces.append(" ".join(cur))
+            cur = overlap_tail(cur)
+            cur_tok = sum(count_tokens(x) for x in cur)
+        cur.append(s)
+        cur_tok += st
+    if cur:
+        pieces.append(" ".join(cur))
     return pieces
 
 
@@ -349,7 +378,13 @@ class HierarchicalChunker:
             if not narrative_text:
                 continue
             default_ct = sec.default_content_type
-            if _looks_definition(narrative_text):
+            # ITTO only when the SECTION TITLE is an Inputs/Tools/Outputs
+            # subsection (title-based; body prose mentions these words too
+            # often to be a reliable signal).
+            section_tail = sec.section_path.split(" > ")[-1]
+            if _ITTO_TITLE_RE.search(section_tail):
+                default_ct = "itto"
+            elif _looks_definition(narrative_text):
                 default_ct = "definition"
             ntok = count_tokens(narrative_text)
             if ntok < self.min and chunks and not atomic:

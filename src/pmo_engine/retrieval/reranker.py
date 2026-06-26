@@ -15,14 +15,32 @@ logger = logging.getLogger(__name__)
 
 class Reranker:
     _model = None
+    _active = None
 
     @classmethod
     def _get(cls):
         if cls._model is None:
             from sentence_transformers import CrossEncoder
             device = config.resolve_device()
-            logger.info("Loading reranker %s on %s ...", config.RERANKER_MODEL, device)
-            cls._model = CrossEncoder(config.RERANKER_MODEL, device=device)
+            candidates = [config.RERANKER_MODEL, *config.RERANKER_FALLBACKS]
+            for name in candidates:
+                try:
+                    logger.info("Loading reranker %s on %s (fp16=%s) ...",
+                                name, device, config.use_fp16())
+                    model = CrossEncoder(name, device=device)
+                    if config.use_fp16():
+                        try:
+                            model.model.half()
+                        except Exception:  # noqa: BLE001
+                            pass
+                    cls._model = model
+                    cls._active = name
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Reranker %s failed to load (%s); trying "
+                                   "next.", name, exc)
+            if cls._model is None:
+                raise RuntimeError("No reranker could be loaded.")
         return cls._model
 
     @classmethod
